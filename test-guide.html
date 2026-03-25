@@ -3,105 +3,426 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>単体・結合・総合テストの違い、テストコードの意義</title>
+  <title>【決定版】木材基幹システムで学ぶテストコード完全ガイド</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            unit: '#22c55e',
-            integration: '#3b82f6',
-            system: '#a855f7',
-            soft: '#f8fafc'
-          },
-          boxShadow: {
-            glow: '0 10px 30px rgba(59,130,246,0.12)'
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral', fontFamily: 'Noto Sans JP' });
   </script>
   <style>
-    .glass { background: rgba(255,255,255,0.78); backdrop-filter: blur(6px); }
-    code { white-space: pre-wrap; }
+    body { font-family: 'Noto Sans JP', sans-serif; }
+    .code-block { background: #1e293b; color: #e2e8f0; border-radius: 0.75rem; padding: 1.5rem; overflow-x: auto; font-family: 'ui-monospace', monospace; font-size: 0.875rem; line-height: 1.6; }
+    .keyword { color: #f472b6; }
+    .comment { color: #94a3b8; }
+    .string { color: #34d399; }
+    .function { color: #60a5fa; }
+    .scroll-hint::-webkit-scrollbar { height: 6px; }
+    .scroll-hint::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .wood-texture { background-color: #fdf8f6; background-image: url("https://www.transparenttextures.com/patterns/wood-pattern.png"); }
   </style>
 </head>
-<body class="bg-gradient-to-b from-slate-50 via-blue-50 to-purple-50 text-slate-800">
-  <header class="relative overflow-hidden">
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.18),_transparent_50%)]"></div>
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative">
-      <span class="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-4 py-1 text-sm font-semibold">🧪 テスト入門ガイド</span>
-      <h1 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">単体・結合・総合テストの違い、テストコードの意義</h1>
-      <p class="mt-6 text-lg leading-relaxed max-w-3xl">はじめてでも大丈夫。<strong>全然難しくないよ</strong>。この資料は「テストコードって何？」というところから、言語別の実践コードまで、やさしく1歩ずつ進めるために作りました。</p>
-      <div class="mt-8 grid gap-4 sm:grid-cols-3">
-        <div class="glass rounded-2xl p-4 shadow-glow border border-blue-100"><p class="text-sm">✅ 読み終わるころには</p><p class="font-bold mt-1">テストレベルの違いが説明できる</p></div>
-        <div class="glass rounded-2xl p-4 shadow-glow border border-emerald-100"><p class="text-sm">✅ 判断できる</p><p class="font-bold mt-1">どこまでテストを書くべきか</p></div>
-        <div class="glass rounded-2xl p-4 shadow-glow border border-purple-100"><p class="text-sm">✅ 実践できる</p><p class="font-bold mt-1">主要言語でのテスト実装の型</p></div>
+<body class="bg-slate-50 text-slate-900 leading-relaxed">
+
+  <header class="wood-texture border-b border-orange-200 relative overflow-hidden">
+    <div class="max-w-6xl mx-auto px-6 py-20 relative text-center">
+      <div class="inline-flex items-center space-x-2 bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-bold mb-6 shadow-lg">
+        <span>🪵 木材流通基幹システム：開発者研修資料</span>
       </div>
+      <h1 class="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 mb-6">
+        テストコードの意義と<br><span class="text-orange-800">多言語実装の徹底比較</span>
+      </h1>
+      <p class="text-xl text-slate-700 max-w-3xl mx-auto leading-relaxed">
+        「杉の板材100枚の価格計算」から「在庫データベース連携」まで。<br>
+        実務に近い例題を通して、テストの書き方と設計の真髄を学びます。
+      </p>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-14">
-    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
-      <h2 class="text-2xl sm:text-3xl font-bold">1. なぜテストコードを書くの？ <span class="text-blue-600">🎯</span></h2>
-      <p class="mt-4 leading-8">テストコードは、アプリ本体とは別に「期待した動きを自動で確認するコード」です。<br>つまり、<strong>未来の自分とチームを助ける安全装置</strong>です。</p>
-      <div class="mt-6 grid md:grid-cols-2 gap-5">
-        <div class="rounded-2xl bg-emerald-50 p-5 border border-emerald-100">
-          <h3 class="font-bold">🛟 主な目的</h3>
-          <ul class="mt-3 space-y-2 text-sm leading-7 list-disc ml-5">
-            <li>バグの早期発見（本番で壊れる前に止める）</li>
-            <li>仕様の見える化（コードが「仕様書」になる）</li>
-            <li>リファクタリングの安心感（内部改善しても壊れない）</li>
-            <li>新メンバーの学習コスト削減（テストが使い方の例になる）</li>
+  <main class="max-w-6xl mx-auto px-6 py-16 space-y-24">
+
+    <section class="grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 class="text-3xl font-bold mb-6 flex items-center">
+          <span class="bg-orange-100 text-orange-700 w-10 h-10 flex items-center justify-center rounded-full mr-3 text-xl">1</span>
+          なぜテストコードが必要か？
+        </h2>
+        <div class="space-y-6 text-slate-600">
+          <p>
+            木材基幹システムでは、<strong>「樹種」「等級」「含水率」「寸法（長×幅×厚）」</strong>など、計算ロジックが非常に複雑です。さらに、法改正による税率変更や、仕入れ価格の変動も激しい世界です。
+          </p>
+          <ul class="space-y-4">
+            <li class="flex items-start">
+              <span class="text-orange-500 mr-2">●</span>
+              <span><strong>デグレード（先祖返り）の防止：</strong> 計算式を修正した際、「ヒノキの価格は直ったが、杉の価格が狂った」という事故を瞬時に検知します。</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-orange-500 mr-2">●</span>
+              <span><strong>「手動確認」からの解放：</strong> 毎回画面を開いて100パターンの数値を入力するのは不可能です。テストコードなら数秒で終わります。</span>
+            </li>
           </ul>
         </div>
-        <div class="rounded-2xl bg-blue-50 p-5 border border-blue-100">
-          <h3 class="font-bold">💡 初心者に伝えたいこと</h3>
-          <p class="mt-3 leading-7 text-sm">「テストを書く = 完璧を目指す」ではありません。<br><strong>壊れたら困るところから守る</strong>だけでも価値があります。最初は1つの関数に1つのテストでOK。</p>
-        </div>
       </div>
-    </section>
-
-    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
-      <h2 class="text-2xl sm:text-3xl font-bold">2. どこまでテストを書くべき？ <span class="text-indigo-600">📐</span></h2>
-      <p class="mt-4 leading-8">すべてを同じ重さでテストする必要はありません。そこで使うのが<strong>テストピラミッド</strong>です。<br>下ほど数を多く・速く、上ほど数を少なく・重要シナリオ中心にします。</p>
-
-      <div class="mt-6 rounded-2xl border border-slate-200 p-4 bg-slate-50 overflow-x-auto">
-        <div class="mermaid min-w-[520px]">
+      <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+        <h3 class="font-bold mb-4 text-center text-slate-400 uppercase tracking-widest text-xs">テストの構造（ピラミッド）</h3>
+        <div class="mermaid text-center">
           graph TD
-            U[🟩 Unit Test<br/>速い・安い・多い] --> I[🟦 Integration Test<br/>中間: 接続の確認]
-            I --> S[🟪 System / E2E Test<br/>遅い・高価・少数精鋭]
+            E2E[総合テスト: 注文完了までの全行程]
+            INT[結合テスト: DBへの在庫反映]
+            UNIT[単体テスト: 立米単価×寸法の計算]
+            E2E --- INT --- UNIT
+            style E2E fill:#fff1f2,stroke:#fb7185
+            style INT fill:#f0f9ff,stroke:#38bdf8
+            style UNIT fill:#f0fdf4,stroke:#4ade80
         </div>
-      </div>
-
-      <div class="mt-6 grid md:grid-cols-3 gap-4 text-sm">
-        <div class="rounded-xl bg-green-50 p-4 border border-green-100"><strong>目安:</strong> 70% Unit。関数・ロジック中心。</div>
-        <div class="rounded-xl bg-blue-50 p-4 border border-blue-100"><strong>目安:</strong> 20% Integration。DB/API連携。</div>
-        <div class="rounded-xl bg-purple-50 p-4 border border-purple-100"><strong>目安:</strong> 10% E2E。主要ユーザー導線。</div>
       </div>
     </section>
 
-    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
-      <h2 class="text-2xl sm:text-3xl font-bold">3. 単体・結合・総合テストの違い <span class="text-pink-600">🧭</span></h2>
-      <div class="mt-6 overflow-x-auto">
-        <table class="w-full min-w-[900px] border-separate border-spacing-y-2 text-sm">
+    <section>
+      <div class="bg-slate-900 text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full -mr-32 -mt-32"></div>
+        <h2 class="text-3xl font-bold mb-8 flex items-center">
+          <span class="bg-orange-500 text-white w-10 h-10 flex items-center justify-center rounded-full mr-3 text-xl">2</span>
+          題材：木材価格計算ロジック
+        </h2>
+        <p class="mb-10 text-slate-300">
+          すべての言語で、以下のビジネスロジックをテストします。
+        </p>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="bg-white/10 p-6 rounded-2xl border border-white/10">
+            <h4 class="font-bold text-orange-400 mb-2 text-sm">【入力項目】</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">樹種（杉・檜）、寸法（ミリ単位）、枚数。および、データベースから取得する「最新の立米単価」。</p>
+          </div>
+          <div class="bg-white/10 p-6 rounded-2xl border border-white/10">
+            <h4 class="font-bold text-orange-400 mb-2 text-sm">【計算ロジック】</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">体積(m3) = (長/1000 * 幅/1000 * 厚/1000) * 枚数<br>金額 = 体積 * 立米単価</p>
+          </div>
+          <div class="bg-white/10 p-6 rounded-2xl border border-white/10">
+            <h4 class="font-bold text-orange-400 mb-2 text-sm">【依存関係（モック対象）】</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">在庫DB（InventoryRepository）。テスト時はDBに接続せず、「杉の単価は60,000円」という仮の結果を返させます。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-16">
+      <div class="text-center">
+        <h2 class="text-4xl font-black mb-4">6. 主要言語の実装例・徹底比較</h2>
+        <p class="text-slate-500">木材基幹システムを支える各言語の「テストの書き味」を見ていきましょう。</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between bg-slate-100 px-6 py-4 rounded-2xl">
+          <h3 class="text-2xl font-bold text-blue-700 flex items-center">☕ Java <span class="ml-3 text-sm font-normal text-slate-500">(JUnit5 + Mockito)</span></h3>
+          <span class="text-xs font-bold bg-white px-3 py-1 rounded-full border shadow-sm">エンタープライズの王道</span>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="code-block scroll-hint">
+            <div class="text-xs text-slate-500 mb-2">// 業務ロジック (Service)</div>
+            <span class="keyword">public class</span> <span class="function">LumberService</span> {
+              <span class="keyword">private final</span> LumberRepository repo;
+              <span class="comment">// 依存性の注入（DI）でモックを差し込みやすくする</span>
+              <span class="keyword">public</span> LumberService(LumberRepository repo) { <span class="keyword">this</span>.repo = repo; }
+
+              <span class="keyword">public long</span> <span class="function">calculatePrice</span>(String type, <span class="keyword">double</span> l, <span class="keyword">double</span> w, <span class="keyword">double</span> t, <span class="keyword">int</span> count) {
+                <span class="keyword">long</span> unitPrice = repo.getUnitPrice(type); <span class="comment">// DB通信を想定</span>
+                <span class="keyword">double</span> volume = (l * w * t / 1_000_000_000.0) * count;
+                <span class="keyword">return</span> (<span class="keyword">long</span>) (volume * unitPrice);
+              }
+            }
+          </div>
+          <div class="code-block scroll-hint">
+            <div class="text-xs text-slate-500 mb-2">// テストコード (Test)</div>
+            <span class="keyword">@ExtendWith</span>(MockitoExtension.class)
+            <span class="keyword">class</span> LumberServiceTest {
+              <span class="keyword">@Mock</span> LumberRepository repo; <span class="comment">// 偽物のDBを作成</span>
+              <span class="keyword">@InjectMocks</span> LumberService service;
+
+              <span class="keyword">@Test</span>
+              <span class="keyword">void</span> testPrice() {
+                <span class="comment">// 杉なら単価6万を返すよう設定（モック）</span>
+                <span class="function">when</span>(repo.getUnitPrice(<span class="string">"Cedar"</span>)).thenReturn(60000L);
+                
+                <span class="keyword">long</span> price = service.calculatePrice(<span class="string">"Cedar"</span>, 4000, 105, 105, 10);
+                <span class="function">assertEquals</span>(26460, price); <span class="comment">// 検証</span>
+              }
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between bg-slate-100 px-6 py-4 rounded-2xl">
+          <h3 class="text-2xl font-bold text-cyan-600 flex items-center">🐹 Go <span class="ml-3 text-sm font-normal text-slate-500">(testing + testify)</span></h3>
+          <span class="text-xs font-bold bg-white px-3 py-1 rounded-full border shadow-sm">爆速・シンプル</span>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="code-block scroll-hint">
+            <span class="keyword">type</span> <span class="function">LumberRepo</span> <span class="keyword">interface</span> {
+              GetUnitPrice(woodType <span class="keyword">string</span>) <span class="keyword">int64</span>
+            }
+            <span class="comment">// インターフェースを使うのがGo流モックのコツ</span>
+            <span class="keyword">func</span> <span class="function">CalcPrice</span>(repo LumberRepo, l, w, t <span class="keyword">float64</span>, count <span class="keyword">int</span>) <span class="keyword">int64</span> {
+              unitPrice := repo.GetUnitPrice(<span class="string">"Cedar"</span>)
+              vol := (l * w * t / 1e9) * <span class="function">float64</span>(count)
+              <span class="keyword">return</span> <span class="keyword">int64</span>(vol * <span class="function">float64</span>(unitPrice))
+            }
+          </div>
+          <div class="code-block scroll-hint">
+            <span class="keyword">func</span> <span class="function">TestCalcPrice</span>(t *testing.T) {
+              mockRepo := <span class="keyword">new</span>(MockLumberRepo)
+              mockRepo.On(<span class="string">"GetUnitPrice"</span>, <span class="string">"Cedar"</span>).Return(<span class="keyword">int64</span>(60000))
+
+              result := <span class="function">CalcPrice</span>(mockRepo, 4000, 105, 105, 10)
+              assert.Equal(t, <span class="keyword">int64</span>(26460), result)
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between bg-slate-100 px-6 py-4 rounded-2xl">
+          <h3 class="text-2xl font-bold text-yellow-600 flex items-center">🐍 Python <span class="ml-3 text-sm font-normal text-slate-500">(pytest + pytest-mock)</span></h3>
+          <span class="text-xs font-bold bg-white px-3 py-1 rounded-full border shadow-sm">読みやすさ重視</span>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="code-block scroll-hint">
+            <span class="keyword">def</span> <span class="function">calculate_lumber_price</span>(repo, length, width, thickness, count):
+                unit_price = repo.get_unit_price()
+                volume = (length * width * thickness / 1_000_000_000) * count
+                <span class="keyword">return</span> <span class="function">int</span>(volume * unit_price)
+          </div>
+          <div class="code-block scroll-hint">
+            <span class="keyword">def</span> <span class="function">test_calculate_price</span>(mocker):
+                <span class="comment"># mocker.Mock()でどんなオブジェクトも即座に偽装可能</span>
+                mock_repo = mocker.Mock()
+                mock_repo.get_unit_price.return_value = 60000
+                
+                res = calculate_lumber_price(mock_repo, 4000, 105, 105, 10)
+                <span class="keyword">assert</span> res == 26460
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between bg-slate-100 px-6 py-4 rounded-2xl">
+          <h3 class="text-2xl font-bold text-blue-500 flex items-center">📜 TypeScript <span class="ml-3 text-sm font-normal text-slate-500">(Jest / Vitest)</span></h3>
+          <span class="text-xs font-bold bg-white px-3 py-1 rounded-full border shadow-sm">Webフロント＆バック共通</span>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="code-block scroll-hint">
+            <span class="keyword">export const</span> <span class="function">calcPrice</span> = (repo: IRepo, l: <span class="keyword">number</span>, w: <span class="keyword">number</span>, t: <span class="keyword">number</span>, count: <span class="keyword">number</span>) => {
+              <span class="keyword">const</span> unitPrice = repo.getUnitPrice();
+              <span class="keyword">const</span> volume = (l * w * t / 1e9) * count;
+              <span class="keyword">return</span> Math.floor(volume * unitPrice);
+            };
+          </div>
+          <div class="code-block scroll-hint">
+            <span class="function">test</span>(<span class="string">'木材価格の計算'</span>, () => {
+              <span class="keyword">const</span> mockRepo = { getUnitPrice: <span class="function">jest.fn()</span>.mockReturnValue(60000) };
+              <span class="keyword">const</span> result = <span class="function">calcPrice</span>(mockRepo, 4000, 105, 105, 10);
+              <span class="function">expect</span>(result).<span class="function">toBe</span>(26460);
+            });
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between bg-slate-100 px-6 py-4 rounded-2xl">
+          <h3 class="text-2xl font-bold text-purple-700 flex items-center">🔷 C# <span class="ml-3 text-sm font-normal text-slate-500">(xUnit + Moq)</span></h3>
+          <span class="text-xs font-bold bg-white px-3 py-1 rounded-full border shadow-sm">Windows基幹システムの大本命</span>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="code-block scroll-hint">
+            <span class="keyword">public long</span> <span class="function">Calculate</span>(ILumberRepo repo, <span class="keyword">double</span> l, <span class="keyword">double</span> w, <span class="keyword">double</span> t, <span class="keyword">int</span> count) {
+                <span class="keyword">var</span> unitPrice = repo.GetPrice();
+                <span class="keyword">double</span> vol = (l * w * t / 1_000_000_000) * count;
+                <span class="keyword">return</span> (<span class="keyword">long</span>)(vol * unitPrice);
+            }
+          </div>
+          <div class="code-block scroll-hint">
+            <span class="keyword">[Fact]</span>
+            <span class="keyword">public void</span> <span class="function">TestLumber</span>() {
+                <span class="keyword">var</span> mock = <span class="keyword">new</span> Mock&lt;ILumberRepo&gt;();
+                mock.Setup(x => x.GetPrice()).Returns(60000);
+                
+                <span class="keyword">var</span> res = Calculate(mock.Object, 4000, 105, 105, 10);
+                Assert.Equal(26460, res);
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between bg-slate-100 px-6 py-4 rounded-2xl">
+          <h3 class="text-2xl font-bold text-orange-700 flex items-center">🦀 Rust <span class="ml-3 text-sm font-normal text-slate-500">(cargo test + mockall)</span></h3>
+          <span class="text-xs font-bold bg-white px-3 py-1 rounded-full border shadow-sm">堅牢・安全性重視</span>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="code-block scroll-hint">
+            <span class="keyword">fn</span> <span class="function">calc_price</span>(repo: &<span class="keyword">dyn</span> Repo, l: f64, w: f64, t: f64, count: i32) -> i64 {
+                <span class="keyword">let</span> unit_price = repo.get_price();
+                <span class="keyword">let</span> vol = (l * w * t / 1e9) * count <span class="keyword">as</span> f64;
+                (vol * unit_price <span class="keyword">as</span> f64) <span class="keyword">as</span> i64
+            }
+          </div>
+          <div class="code-block scroll-hint">
+            <span class="keyword">#[test]</span>
+            <span class="keyword">fn</span> <span class="function">test_wood</span>() {
+                <span class="keyword">let</span> <span class="keyword">mut</span> mock = MockRepo::new();
+                mock.expect_get_price().returning(|| 60000);
+                
+                <span class="keyword">let</span> res = calc_price(&mock, 4000.0, 105.0, 105.0, 10);
+                <span class="function">assert_eq!</span>(26460, res);
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between bg-slate-100 px-6 py-4 rounded-2xl">
+          <h3 class="text-2xl font-bold text-slate-700 flex items-center">🏗️ C <span class="ml-3 text-sm font-normal text-slate-500">(Google Test)</span></h3>
+          <span class="text-xs font-bold bg-white px-3 py-1 rounded-full border shadow-sm">組み込み・パフォーマンス</span>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="code-block scroll-hint">
+            <span class="keyword">long</span> <span class="function">calc_price</span>(<span class="keyword">long</span> (*get_price)(), <span class="keyword">double</span> l, <span class="keyword">double</span> w, <span class="keyword">double</span> t, <span class="keyword">int</span> count) {
+                <span class="keyword">double</span> vol = (l * w * t / 1000000000.0) * count;
+                <span class="keyword">return</span> (<span class="keyword">long</span>)(vol * get_price());
+            }
+          </div>
+          <div class="code-block scroll-hint">
+            <span class="function">TEST</span>(LumberTest, PriceCalculation) {
+                <span class="comment">// Cでは関数ポインタや偽関数を使ってモック化</span>
+                <span class="keyword">auto</span> fake_price = []() -> <span class="keyword">long</span> { <span class="keyword">return</span> 60000; };
+                <span class="function">EXPECT_EQ</span>(26460, <span class="function">calc_price</span>(fake_price, 4000, 105, 105, 10));
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="flex items-center space-x-3 mb-8">
+        <div class="w-12 h-12 bg-slate-200 flex items-center justify-center rounded-2xl text-2xl">🌍</div>
+        <h2 class="text-3xl font-bold">追加の言語・フレームワーク一覧</h2>
+      </div>
+      <div class="overflow-x-auto scroll-hint bg-white rounded-3xl shadow-xl border border-slate-100">
+        <table class="w-full text-left text-sm">
           <thead>
-            <tr>
-              <th class="text-left p-3 bg-slate-100 rounded-l-xl">テスト種別</th>
-              <th class="text-left p-3 bg-slate-100">主な対象</th>
-              <th class="text-left p-3 bg-slate-100">速度</th>
-              <th class="text-left p-3 bg-slate-100">壊れやすさ</th>
-              <th class="text-left p-3 bg-slate-100 rounded-r-xl">初心者向けポイント</th>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold tracking-wider">
+              <th class="p-6">言語</th>
+              <th class="p-6">推奨フレームワーク</th>
+              <th class="p-6">特徴</th>
+              <th class="p-6">初心者向けコード（例：単価6万）</th>
             </tr>
           </thead>
-          <tbody>
-            <tr class="bg-green-50">
-              <td class="p-3 rounded-l-xl font-semibold">🟩 単体テスト (Unit)</td>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="p-6 font-bold">VB.NET</td>
+              <td class="p-6">MSTest</td>
+              <td class="p-6 text-slate-500">C#と同様に使いやすい</td>
+              <td class="p-6"><code>Assert.AreEqual(26460, res)</code></td>
+            </tr>
+            <tr>
+              <td class="p-6 font-bold">COBOL</td>
+              <td class="p-6">Micro Focus Unit Testing</td>
+              <td class="p-6 text-slate-500">レガシー資産の近代化に活用</td>
+              <td class="p-6"><code>EXPECT RESULT = 26460</code></td>
+            </tr>
+            <tr>
+              <td class="p-6 font-bold">R言語</td>
+              <td class="p-6">testthat</td>
+              <td class="p-6 text-slate-500">データ分析・統計の正確性を保証</td>
+              <td class="p-6"><code>expect_equal(calc(60000), 26460)</code></td>
+            </tr>
+            <tr>
+              <td class="p-6 font-bold">PHP</td>
+              <td class="p-6">Pest / PHPUnit</td>
+              <td class="p-6 text-slate-500">Pestは非常にモダンで読みやすい</td>
+              <td class="p-6"><code>expect($res)->toBe(26460);</code></td>
+            </tr>
+            <tr>
+              <td class="p-6 font-bold">Ruby</td>
+              <td class="p-6">RSpec</td>
+              <td class="p-6 text-slate-500">英語の文章のように書ける(DSL)</td>
+              <td class="p-6"><code>expect(price).to eq 26460</code></td>
+            </tr>
+            <tr>
+              <td class="p-6 font-bold">Swift</td>
+              <td class="p-6">Swift Testing</td>
+              <td class="p-6 text-slate-500">Apple公式の最新テスト基盤</td>
+              <td class="p-6"><code>#expect(price == 26460)</code></td>
+            </tr>
+            <tr>
+              <td class="p-6 font-bold">Kotlin</td>
+              <td class="p-6">Kotest</td>
+              <td class="p-6 text-slate-500">表現力が非常に高い</td>
+              <td class="p-6"><code>price shouldBe 26460</code></td>
+            </tr>
+            <tr>
+              <td class="p-6 font-bold">SQL</td>
+              <td class="p-6">pgTAP / tSQLt</td>
+              <td class="p-6 text-slate-500">DB内の手続き(プロシージャ)をテスト</td>
+              <td class="p-6"><code>SELECT results_eq('SELECT...', 26460);</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid md:grid-cols-2 gap-12">
+      <div class="p-10 bg-white rounded-3xl border border-slate-100 shadow-sm">
+        <h3 class="text-2xl font-bold mb-6 flex items-center">🖥️ フロントエンドのテスト</h3>
+        <p class="text-slate-600 mb-6 leading-relaxed">
+          木材システムの場合、ブラウザ上で「厚み105mm、幅105mm」と入力した際、リアルタイムでプレビューが出るような機能にテストが必要です。
+        </p>
+        <div class="bg-blue-50 p-4 rounded-xl text-sm border border-blue-100">
+          <strong>推奨ツール：</strong> Vitest（ロジック）、Playwright（画面操作）<br>
+          <strong>理由：</strong> 入力ミスは受注ミスに直結するため、重要な画面だけは自動で動かしてチェックすべきです。
+        </div>
+      </div>
+      <div class="p-10 bg-white rounded-3xl border border-slate-100 shadow-sm">
+        <h3 class="text-2xl font-bold mb-6 flex items-center">⚖️ 先に書くか、後に書くか</h3>
+        <div class="space-y-4">
+          <div class="flex items-start">
+            <div class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold mr-3 mt-1">TDD</div>
+            <div>
+              <p class="font-bold text-sm">テスト駆動開発（先に書く）</p>
+              <p class="text-xs text-slate-500">仕様が複雑な「価格計算」に向いています。設計が整理されます。</p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold mr-3 mt-1">Later</div>
+            <div>
+              <p class="font-bold text-sm">実装後テスト（後に書く）</p>
+              <p class="text-xs text-slate-500">「とりあえず動かしたい」プロトタイプ作成時に向いています。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="text-center py-20 bg-slate-900 rounded-[4rem] text-white">
+      <h2 class="text-3xl font-bold mb-6">まずは1本、テストを書いてみましょう</h2>
+      <p class="text-slate-400 mb-10 max-w-2xl mx-auto">
+        「テストがある安心感」は、一度体験すると病みつきになります。不具合を恐れず、自信を持ってコードを修正できる喜びを。
+      </p>
+      <div class="flex justify-center space-x-4">
+        <div class="px-8 py-4 bg-orange-600 rounded-full font-bold hover:bg-orange-500 transition cursor-pointer">
+          研修用ソースコードをDL
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="py-12 border-t border-slate-200 text-center text-slate-400 text-sm">
+    &copy; 2026 木材基幹システム開発チーム | ソフトウェア品質向上プロジェクト
+  </footer>
+
+</body>
+</html>
               <td class="p-3">1関数・1クラスなど最小単位</td>
               <td class="p-3">とても速い</td>
               <td class="p-3">低い</td>
