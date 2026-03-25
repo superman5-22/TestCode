@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>単体・結合・総合テストの違い、テストコードの意義</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            unit: '#22c55e',
+            integration: '#3b82f6',
+            system: '#a855f7',
+            soft: '#f8fafc'
+          },
+          boxShadow: {
+            glow: '0 10px 30px rgba(59,130,246,0.12)'
+          }
+        }
+      }
+    }
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+  </script>
+  <style>
+    .glass { background: rgba(255,255,255,0.78); backdrop-filter: blur(6px); }
+    code { white-space: pre-wrap; }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-slate-50 via-blue-50 to-purple-50 text-slate-800">
+  <header class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.18),_transparent_50%)]"></div>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative">
+      <span class="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-4 py-1 text-sm font-semibold">🧪 テスト入門ガイド</span>
+      <h1 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">単体・結合・総合テストの違い、テストコードの意義</h1>
+      <p class="mt-6 text-lg leading-relaxed max-w-3xl">はじめてでも大丈夫。<strong>全然難しくないよ</strong>。この資料は「テストコードって何？」というところから、言語別の実践コードまで、やさしく1歩ずつ進めるために作りました。</p>
+      <div class="mt-8 grid gap-4 sm:grid-cols-3">
+        <div class="glass rounded-2xl p-4 shadow-glow border border-blue-100"><p class="text-sm">✅ 読み終わるころには</p><p class="font-bold mt-1">テストレベルの違いが説明できる</p></div>
+        <div class="glass rounded-2xl p-4 shadow-glow border border-emerald-100"><p class="text-sm">✅ 判断できる</p><p class="font-bold mt-1">どこまでテストを書くべきか</p></div>
+        <div class="glass rounded-2xl p-4 shadow-glow border border-purple-100"><p class="text-sm">✅ 実践できる</p><p class="font-bold mt-1">主要言語でのテスト実装の型</p></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-14">
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">1. なぜテストコードを書くの？ <span class="text-blue-600">🎯</span></h2>
+      <p class="mt-4 leading-8">テストコードは、アプリ本体とは別に「期待した動きを自動で確認するコード」です。<br>つまり、<strong>未来の自分とチームを助ける安全装置</strong>です。</p>
+      <div class="mt-6 grid md:grid-cols-2 gap-5">
+        <div class="rounded-2xl bg-emerald-50 p-5 border border-emerald-100">
+          <h3 class="font-bold">🛟 主な目的</h3>
+          <ul class="mt-3 space-y-2 text-sm leading-7 list-disc ml-5">
+            <li>バグの早期発見（本番で壊れる前に止める）</li>
+            <li>仕様の見える化（コードが「仕様書」になる）</li>
+            <li>リファクタリングの安心感（内部改善しても壊れない）</li>
+            <li>新メンバーの学習コスト削減（テストが使い方の例になる）</li>
+          </ul>
+        </div>
+        <div class="rounded-2xl bg-blue-50 p-5 border border-blue-100">
+          <h3 class="font-bold">💡 初心者に伝えたいこと</h3>
+          <p class="mt-3 leading-7 text-sm">「テストを書く = 完璧を目指す」ではありません。<br><strong>壊れたら困るところから守る</strong>だけでも価値があります。最初は1つの関数に1つのテストでOK。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">2. どこまでテストを書くべき？ <span class="text-indigo-600">📐</span></h2>
+      <p class="mt-4 leading-8">すべてを同じ重さでテストする必要はありません。そこで使うのが<strong>テストピラミッド</strong>です。<br>下ほど数を多く・速く、上ほど数を少なく・重要シナリオ中心にします。</p>
+
+      <div class="mt-6 rounded-2xl border border-slate-200 p-4 bg-slate-50 overflow-x-auto">
+        <div class="mermaid min-w-[520px]">
+          graph TD
+            U[🟩 Unit Test<br/>速い・安い・多い] --> I[🟦 Integration Test<br/>中間: 接続の確認]
+            I --> S[🟪 System / E2E Test<br/>遅い・高価・少数精鋭]
+        </div>
+      </div>
+
+      <div class="mt-6 grid md:grid-cols-3 gap-4 text-sm">
+        <div class="rounded-xl bg-green-50 p-4 border border-green-100"><strong>目安:</strong> 70% Unit。関数・ロジック中心。</div>
+        <div class="rounded-xl bg-blue-50 p-4 border border-blue-100"><strong>目安:</strong> 20% Integration。DB/API連携。</div>
+        <div class="rounded-xl bg-purple-50 p-4 border border-purple-100"><strong>目安:</strong> 10% E2E。主要ユーザー導線。</div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">3. 単体・結合・総合テストの違い <span class="text-pink-600">🧭</span></h2>
+      <div class="mt-6 overflow-x-auto">
+        <table class="w-full min-w-[900px] border-separate border-spacing-y-2 text-sm">
+          <thead>
+            <tr>
+              <th class="text-left p-3 bg-slate-100 rounded-l-xl">テスト種別</th>
+              <th class="text-left p-3 bg-slate-100">主な対象</th>
+              <th class="text-left p-3 bg-slate-100">速度</th>
+              <th class="text-left p-3 bg-slate-100">壊れやすさ</th>
+              <th class="text-left p-3 bg-slate-100 rounded-r-xl">初心者向けポイント</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="bg-green-50">
+              <td class="p-3 rounded-l-xl font-semibold">🟩 単体テスト (Unit)</td>
+              <td class="p-3">1関数・1クラスなど最小単位</td>
+              <td class="p-3">とても速い</td>
+              <td class="p-3">低い</td>
+              <td class="p-3 rounded-r-xl">まずここから始めるのが最短ルート</td>
+            </tr>
+            <tr class="bg-blue-50">
+              <td class="p-3 rounded-l-xl font-semibold">🟦 結合テスト (Integration)</td>
+              <td class="p-3">API↔DB、サービス間接続</td>
+              <td class="p-3">中程度</td>
+              <td class="p-3">中程度</td>
+              <td class="p-3 rounded-r-xl">モックだけでは見えない不具合を拾える</td>
+            </tr>
+            <tr class="bg-purple-50">
+              <td class="p-3 rounded-l-xl font-semibold">🟪 総合 / E2E (System)</td>
+              <td class="p-3">ユーザー操作の全体フロー</td>
+              <td class="p-3">遅い</td>
+              <td class="p-3">高い</td>
+              <td class="p-3 rounded-r-xl">数は絞って「売上に直結する導線」を守る</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-8 rounded-2xl border border-slate-200 p-4 bg-slate-50 overflow-x-auto">
+        <div class="mermaid min-w-[860px]">
+          flowchart LR
+            subgraph Unit[単体テスト]
+              A[関数A] --> B[関数B]
+            end
+            subgraph Integration[結合テスト]
+              Svc[APIサービス] --> DB[(DB)]
+              Svc --> Ext[外部API]
+            end
+            subgraph System[総合/E2E]
+              User[ユーザー] --> UI[画面]
+              UI --> API[バックエンド]
+              API --> DB2[(DB)]
+            end
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">4. 何をテストするべき？領域別の判断基準 <span class="text-amber-600">🧩</span></h2>
+      <div class="mt-6 grid lg:grid-cols-2 gap-5">
+        <div class="rounded-2xl p-5 border bg-slate-50">
+          <h3 class="font-bold">🎨 フロントエンド</h3>
+          <p class="mt-2 text-sm leading-7"><strong>結論:</strong> テストすべき。特に「表示条件」「入力バリデーション」「主要導線」。<br><strong>書くべきテスト:</strong> Unit(Vitest/Jest) + コンポーネントテスト + 重要導線E2E(Playwright/Cypress)。</p>
+        </div>
+        <div class="rounded-2xl p-5 border bg-slate-50">
+          <h3 class="font-bold">🛠️ バックエンド</h3>
+          <p class="mt-2 text-sm leading-7"><strong>結論:</strong> 最優先で書くべき。業務ロジックは壊れると影響が大きい。<br><strong>書くべきテスト:</strong> Unit中心 + API/DB連携のIntegration + 認証・決済導線のE2E。</p>
+        </div>
+        <div class="rounded-2xl p-5 border bg-slate-50">
+          <h3 class="font-bold">🗄️ SQL / DB</h3>
+          <p class="mt-2 text-sm leading-7"><strong>結論:</strong> 書く価値が高い。JOINや集計、マイグレーション失敗は事故になりやすい。<br><strong>書くべきテスト:</strong> クエリ検証、制約、マイグレーションの再現テスト。</p>
+        </div>
+        <div class="rounded-2xl p-5 border bg-slate-50">
+          <h3 class="font-bold">☁️ インフラ / クラウド</h3>
+          <p class="mt-2 text-sm leading-7"><strong>結論:</strong> 「コード化(IaC)しているならテストする」。<br><strong>書くべきテスト:</strong> Terraform validate/plan、静的チェック、監視アラートの動作確認。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">5. フロントのテストは本当に不要？ <span class="text-rose-600">🖥️</span></h2>
+      <p class="mt-4 leading-8"><strong>答え: 不要ではありません。</strong> UIは変更頻度が高く、体験品質に直結します。<br>ただし、全部E2Eにすると重くなるので「役割分担」が大切です。</p>
+      <div class="mt-5 grid md:grid-cols-3 gap-4 text-sm">
+        <div class="rounded-xl p-4 bg-emerald-50 border border-emerald-100"><strong>Vitest / Jest</strong><br>関数・Hooks・状態管理の速い確認</div>
+        <div class="rounded-xl p-4 bg-blue-50 border border-blue-100"><strong>React Testing Library</strong><br>ユーザー視点でUIの挙動確認</div>
+        <div class="rounded-xl p-4 bg-purple-50 border border-purple-100"><strong>Playwright / Cypress</strong><br>ブラウザで実際の導線を保証</div>
+      </div>
+      <p class="mt-5 text-sm leading-7">代替手段として、StorybookのVisual Regression（見た目差分）を使う方法も有効です。UI崩れ検知に強いです。</p>
+    </section>
+
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">6. バックエンドは先にテスト？後でテスト？ <span class="text-cyan-600">⚖️</span></h2>
+      <div class="grid md:grid-cols-2 gap-5 mt-6">
+        <div class="rounded-2xl border border-cyan-100 bg-cyan-50 p-5">
+          <h3 class="font-bold">🧪 TDD（先にテスト）</h3>
+          <ul class="mt-3 list-disc ml-5 text-sm leading-7">
+            <li>Red: 失敗するテストを書く</li>
+            <li>Green: 最小実装で通す</li>
+            <li>Refactor: きれいに整える</li>
+          </ul>
+          <p class="mt-3 text-sm">メリット: 設計が引き締まる。仕様がブレにくい。</p>
+        </div>
+        <div class="rounded-2xl border border-amber-100 bg-amber-50 p-5">
+          <h3 class="font-bold">🛠️ After実装（後でテスト）</h3>
+          <ul class="mt-3 list-disc ml-5 text-sm leading-7">
+            <li>まず機能を作って動かす</li>
+            <li>壊れたら困る部分からテスト追加</li>
+            <li>バグ再発防止テストを積む</li>
+          </ul>
+          <p class="mt-3 text-sm">メリット: 開発初速が出る。既存PJで導入しやすい。</p>
+        </div>
+      </div>
+      <p class="mt-5 text-sm leading-7"><strong>初心者へのおすすめ:</strong> まずはAfter実装で始め、慣れたら新規機能でTDDを試すハイブリッドが現実的です。</p>
+    </section>
+
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">7. 実際の書き方（主要7言語） <span class="text-violet-600">💻</span></h2>
+      <p class="mt-4 text-sm leading-7">以下は「テスト対象コード → テストコード」をセットで掲載。まずは構文の完全理解より、<strong>Given-When-Then（前提・操作・期待）</strong>の形を真似しましょう。</p>
+
+      <div class="mt-6 space-y-8">
+        <article>
+          <h3 class="font-bold text-lg">Java（JUnit5 + Mockito + Testcontainers）</h3>
+          <pre class="mt-2 bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs"><code>// Production
+class PriceService { int total(int price, int qty){ return price * qty; } }
+// Test (JUnit5)
+@Test void total_works(){
+  var s = new PriceService();
+  assertEquals(300, s.total(100, 3));
+}
+// Mockito example: external dependency mock
+// Testcontainers example: PostgreSQLコンテナを起動してRepositoryを検証</code></pre>
+        </article>
+
+        <article>
+          <h3 class="font-bold text-lg">Go（testing + testify + sqlmock + httptest）</h3>
+          <pre class="mt-2 bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs"><code>// Production
+func Total(price, qty int) int { return price * qty }
+// Test
+a := assert.New(t)
+a.Equal(300, Total(100,3))
+// sqlmock: DBクエリ期待値検証
+// httptest: APIハンドラのHTTPレスポンス検証</code></pre>
+        </article>
+
+        <article>
+          <h3 class="font-bold text-lg">Python（pytest + pytest-mock + requests-mock）</h3>
+          <pre class="mt-2 bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs"><code># production
+def total(price, qty):
+    return price * qty
+
+# test
+def test_total():
+    assert total(100, 3) == 300
+
+# pytest-mock: mocker.patch(...)
+# requests-mock: 外部HTTPの固定レスポンス化</code></pre>
+        </article>
+
+        <article>
+          <h3 class="font-bold text-lg">TypeScript / JavaScript（Jest + RTL + Cypress/Playwright）</h3>
+          <pre class="mt-2 bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs"><code>// production
+export const total = (price:number, qty:number)=> price * qty;
+// unit test (Jest)
+test('total', ()=>{ expect(total(100,3)).toBe(300); });
+// React Testing Library
+render(&lt;LoginButton /&gt;); expect(screen.getByRole('button')).toBeInTheDocument();
+// Playwright/Cypress: login→購入完了までのE2E</code></pre>
+        </article>
+
+        <article>
+          <h3 class="font-bold text-lg">C#（xUnit / NUnit / MSTest + Moq + Testcontainers）</h3>
+          <pre class="mt-2 bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs"><code>// production
+public int Total(int price, int qty) => price * qty;
+// xUnit
+[Fact]
+public void Total_Works(){ Assert.Equal(300, Total(100,3)); }
+// Moq: 依存サービスをモック
+// Testcontainers: DB付き結合テスト</code></pre>
+        </article>
+
+        <article>
+          <h3 class="font-bold text-lg">Rust（cargo test + mockall + sqlx + reqwest）</h3>
+          <pre class="mt-2 bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs"><code>// production
+fn total(price:i32, qty:i32)->i32 { price * qty }
+// test
+#[test]
+fn total_works(){ assert_eq!(300, total(100,3)); }
+// mockall: trait依存のモック
+// sqlx: DBテスト、reqwest: API統合テスト</code></pre>
+        </article>
+
+        <article>
+          <h3 class="font-bold text-lg">C言語（GoogleTest / Unity / CppUTest）</h3>
+          <pre class="mt-2 bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs"><code>// production
+int total(int price, int qty){ return price * qty; }
+// GoogleTest(C++)ラッパ例
+TEST(TotalTest, Works){ EXPECT_EQ(300, total(100,3)); }
+// 組み込みならUnity/CppUTestが軽量で使いやすい</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">8. 多言語テストフレームワーク徹底比較 <span class="text-fuchsia-600">🌍</span></h2>
+      <div class="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
+        <table class="min-w-[1300px] w-full text-sm">
+          <thead class="bg-slate-100 text-slate-700">
+            <tr>
+              <th class="p-3 text-left">言語</th>
+              <th class="p-3 text-left">おすすめフレームワーク</th>
+              <th class="p-3 text-left">特徴</th>
+              <th class="p-3 text-left">初心者向け簡単コード例</th>
+              <th class="p-3 text-left">アドバイス</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <tr><td class="p-3">Java</td><td class="p-3">JUnit5, Mockito, Testcontainers</td><td class="p-3">企業利用が多く情報量豊富</td><td class="p-3"><code>@Test void ok(){ assertEquals(1,1); }</code></td><td class="p-3">まずJUnit→次にMockito</td></tr>
+            <tr><td class="p-3">Go</td><td class="p-3">testing, testify, sqlmock, httptest</td><td class="p-3">標準testingが強い</td><td class="p-3"><code>if got!=want { t.Fatal() }</code></td><td class="p-3">標準から始めると学びやすい</td></tr>
+            <tr><td class="p-3">Python</td><td class="p-3">pytest, pytest-mock, requests-mock</td><td class="p-3">短く書ける</td><td class="p-3"><code>def test_x(): assert f()==1</code></td><td class="p-3">fixture活用で再利用</td></tr>
+            <tr><td class="p-3">TS/JS</td><td class="p-3">Jest, RTL, Playwright/Cypress</td><td class="p-3">UI〜E2Eまで一気通貫</td><td class="p-3"><code>expect(fn()).toBe(1)</code></td><td class="p-3">E2Eは重要導線に限定</td></tr>
+            <tr><td class="p-3">C#</td><td class="p-3">xUnit/NUnit/MSTest, Moq, Testcontainers</td><td class="p-3">IDE統合が強い</td><td class="p-3"><code>[Fact] Assert.True(true);</code></td><td class="p-3">xUnit + Moqが定番</td></tr>
+            <tr><td class="p-3">Rust</td><td class="p-3">cargo test, mockall, sqlx</td><td class="p-3">安全性が高い</td><td class="p-3"><code>#[test] fn t(){ assert_eq!(1,1); }</code></td><td class="p-3">まず標準testで十分</td></tr>
+            <tr><td class="p-3">C</td><td class="p-3">GoogleTest, Unity, CppUTest</td><td class="p-3">環境依存に注意</td><td class="p-3"><code>TEST(X,Y){ EXPECT_EQ(1,1); }</code></td><td class="p-3">組み込みはUnityが軽い</td></tr>
+            <tr><td class="p-3">VB.NET</td><td class="p-3">MSTest / NUnit</td><td class="p-3">.NET資産を活用可能</td><td class="p-3"><code>&lt;TestMethod&gt; Public Sub T()</code></td><td class="p-3">既存資産に合わせる</td></tr>
+            <tr><td class="p-3">COBOL</td><td class="p-3">Micro Focus Unit Testing</td><td class="p-3">レガシー向け</td><td class="p-3"><code>ASSERT EQUAL expected actual</code></td><td class="p-3">I/O依存を分離して検証</td></tr>
+            <tr><td class="p-3">R言語</td><td class="p-3">testthat</td><td class="p-3">データ分析で定番</td><td class="p-3"><code>test_that("x",{expect_equal(1,1)})</code></td><td class="p-3">データ前処理を重点テスト</td></tr>
+            <tr><td class="p-3">PHP</td><td class="p-3">PHPUnit</td><td class="p-3">Web開発の王道</td><td class="p-3"><code>$this-&gt;assertSame(1,1);</code></td><td class="p-3">LaravelならPestも便利</td></tr>
+            <tr><td class="p-3">Ruby</td><td class="p-3">RSpec / Minitest</td><td class="p-3">自然言語風に書ける</td><td class="p-3"><code>expect(total).to eq 3</code></td><td class="p-3">RSpecは可読性重視</td></tr>
+            <tr><td class="p-3">Swift</td><td class="p-3">XCTest</td><td class="p-3">Apple公式</td><td class="p-3"><code>XCTAssertEqual(1,1)</code></td><td class="p-3">UIテストと組み合わせる</td></tr>
+            <tr><td class="p-3">Kotlin</td><td class="p-3">JUnit + Kotest</td><td class="p-3">DSLが書きやすい</td><td class="p-3"><code>1 shouldBe 1</code></td><td class="p-3">Kotestで可読性UP</td></tr>
+            <tr><td class="p-3">Scala</td><td class="p-3">ScalaTest</td><td class="p-3">関数型スタイルに強い</td><td class="p-3"><code>result shouldBe 1</code></td><td class="p-3">副作用の分離を意識</td></tr>
+            <tr><td class="p-3">SQL</td><td class="p-3">tSQLt など</td><td class="p-3">DB内でテスト実行</td><td class="p-3"><code>EXEC tSQLt.AssertEquals ...</code></td><td class="p-3">重要クエリは必ず固定化</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-100">
+      <h2 class="text-2xl sm:text-3xl font-bold">9. 初心者向け 1週間ロードマップ <span class="text-emerald-600">🗓️</span></h2>
+      <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+        <div class="rounded-xl border p-4 bg-emerald-50"><strong>Day1</strong><br>Unit Testを1本書く（四則演算など）</div>
+        <div class="rounded-xl border p-4 bg-blue-50"><strong>Day2</strong><br>失敗ケースを追加（異常値・境界値）</div>
+        <div class="rounded-xl border p-4 bg-indigo-50"><strong>Day3</strong><br>モックで外部依存を切り離す</div>
+        <div class="rounded-xl border p-4 bg-purple-50"><strong>Day4</strong><br>DB or APIのIntegration Testを1本</div>
+        <div class="rounded-xl border p-4 bg-pink-50"><strong>Day5</strong><br>CIで自動実行（GitHub Actionsなど）</div>
+        <div class="rounded-xl border p-4 bg-orange-50"><strong>Day6</strong><br>主要導線のE2Eを1シナリオ</div>
+        <div class="rounded-xl border p-4 bg-teal-50"><strong>Day7</strong><br>テスト設計を振り返り改善</div>
+        <div class="rounded-xl border p-4 bg-slate-100"><strong>ゴール</strong><br>「壊れたら困る」を自力で守れる状態へ</div>
+      </div>
+      <p class="mt-6 leading-8">ここまで読めたあなたは、もうスタート地点を超えています。怖がらなくて大丈夫。<strong>一緒に1歩ずつ進めよう。</strong></p>
+    </section>
+  </main>
+
+  <footer class="py-10 text-center text-sm text-slate-500">
+    Built with 💙 Tailwind CSS + Mermaid.js / For complete beginners
+  </footer>
+</body>
+</html>
